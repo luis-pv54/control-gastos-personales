@@ -10,6 +10,9 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   List<Map<String, dynamic>> _allData = [];
+  double _calcularTotal() {
+  return _allData.fold(0.0, (suma, item) => suma + (item['monto'] ?? 0));
+}
 
   bool _isLoading = true;
 
@@ -63,16 +66,16 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _selectDate() async {
-    DateTime? _picked = await showDatePicker(
+    DateTime? picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
     );
 
-    if (_picked != null) {
+    if (picked != null) {
       setState(() {
-        _dateController.text = _picked.toString().split(" ")[0];
+        _dateController.text = picked.toString().split(" ")[0];
       });
     }
   }
@@ -194,67 +197,95 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Color(0xFFECEAF4),
-      appBar: AppBar(title: Text('CRUD Operations')),
-      body:
-          _isLoading
-              ? Center(child: CircularProgressIndicator())
-              : ListView.builder(
-                itemCount: _allData.length,
-                itemBuilder:
-                    (context, index) => Card(
-                      margin: EdgeInsets.all(15),
-                      child: ListTile(
-                        title: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 5),
-                          child: Text(
-                            _allData[index]['categoria'],
-                            style: TextStyle(fontSize: 20),
-                          ),
-                        ),
-                        // subtitle: Text(_allData[index]['descripcion']),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(_allData[index]['descripcion'] ?? ''),
-                            SizedBox(height: 4),
-                            Text(
-                              'Monto: \$${_allData[index]['monto'].toString()}',
-                            ),
-                            SizedBox(height: 2),
-                            // Text('Fecha: ${_allData[index]['createdAt']}'),
-                            Text(
-                              'Fecha: ${DateTime.parse(_allData[index]['createdAt']).toLocal().toString().split(' ')[0]}',
-                            ),
-                          ],
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              onPressed: () {
-                                showBottomSheet(_allData[index]['id']);
-                              },
-                              icon: Icon(Icons.edit, color: Colors.indigo),
-                            ),
-                            IconButton(
-                              onPressed: () {
-                                _deleteData(_allData[index]['id']);
-                              },
-                              icon: Icon(Icons.delete, color: Colors.red),
-                            ),
-                          ],
+ @override
+Widget build(BuildContext context) {
+  return Scaffold(
+    backgroundColor: Color(0xFFECEAF4),
+    appBar: AppBar(title: Text('CRUD Operations')),
+    body: _isLoading
+        ? Center(child: CircularProgressIndicator())
+        : Column(
+            children: [
+              Padding(
+                padding: EdgeInsets.all(15),
+                child: Text(
+                  'Gasto total: \$${_calcularTotal().toStringAsFixed(2)}',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: _allData.length,
+                  itemBuilder: (context, index) => Card(
+                    margin: EdgeInsets.all(15),
+                    child: ListTile(
+                      title: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 5),
+                        child: Text(
+                          _allData[index]['categoria'],
+                          style: TextStyle(fontSize: 20),
                         ),
                       ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(_allData[index]['descripcion'] ?? ''),
+                          SizedBox(height: 4),
+                          Text(
+                            'Monto: \$${_allData[index]['monto'].toString()}',
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'Fecha: ${DateTime.parse(_allData[index]['createdAt']).toLocal().toString().split(' ')[0]}',
+                          ),
+                        ],
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            onPressed: () {
+                              showBottomSheet(_allData[index]['id']);
+                            },
+                            icon: Icon(Icons.edit, color: Colors.indigo),
+                          ),
+                          IconButton(
+                            onPressed: () {
+                              showDialog(
+                                context: context, 
+                                builder: (ctx) => AlertDialog(
+                                  title: Text('Confirmar'),
+                                  content: Text('¿Deseas eliminar este gasto?'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.of(ctx).pop(),
+                                      child: Text('Cancelar'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.of(ctx).pop();
+                                        _deleteData(_allData[index]['id']);
+                                      },
+                                      child: Text('Eliminar', style: TextStyle(color: Colors.red)),
+                                    ),
+                                  ]
+                                ),
+                              );
+                            },
+                            icon: Icon(Icons.delete, color: const Color.fromARGB(255, 45, 35, 34)),
+                          ),
+                        ],
+                      ),
                     ),
+                  ),
+                ),
               ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => showBottomSheet(null),
-        child: Icon(Icons.add),
-      ),
-    );
-  }
-}
+            ],
+          ),
+    floatingActionButton: FloatingActionButton(
+      onPressed: () => showBottomSheet(null),
+      child: Icon(Icons.add),
+    ),
+  );
+  } // Build method () close
+} // Class _HomeScreenState close
