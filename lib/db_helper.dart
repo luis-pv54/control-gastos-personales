@@ -7,7 +7,7 @@ class SQLHelper {
       categoria TEXT,
       descripcion TEXT,
       monto REAL,
-      createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      fecha TEXT
     )""");
   }
 
@@ -25,7 +25,7 @@ class SQLHelper {
     String categoria,
     String? descripcion,
     double monto,
-    // DateTime fecha,
+    String fecha,
   ) async {
     final db = await SQLHelper.db();
 
@@ -33,7 +33,7 @@ class SQLHelper {
       'categoria': categoria,
       'descripcion': descripcion,
       'monto': monto,
-      // 'fecha': fecha,
+      'fecha': fecha,
     };
     final id = await db.insert(
       'data',
@@ -59,13 +59,14 @@ class SQLHelper {
     String categoria,
     String? descripcion,
     double monto,
+    String fecha,
   ) async {
     final db = await SQLHelper.db();
     final data = {
       'categoria': categoria,
       'descripcion': descripcion,
       'monto': monto,
-      'createdAt': DateTime.now().toString(),
+      'fecha': fecha,
     };
     final result = await db.update(
       'data',

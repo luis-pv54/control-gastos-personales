@@ -13,6 +13,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   bool _isLoading = true;
 
+  double calcularTotal() {
+    return _allData.fold(0.0, (sum, item) => sum + (item['monto'] as double));
+  }
+
   // Get All Data From Database
   void _refreshData() async {
     final data = await SQLHelper.getAllData();
@@ -34,7 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _categoriaController.text,
       _descripcionController.text,
       double.parse(_montoController.text),
-      // DateTime.parse(_dateController.text),
+      _dateController.text,
     );
     _refreshData();
   }
@@ -46,6 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _categoriaController.text,
       _descripcionController.text,
       double.parse(_montoController.text),
+      _dateController.text,
     );
     _refreshData();
   }
@@ -56,7 +61,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         backgroundColor: Colors.redAccent,
-        content: Text('Data Deleted'),
+        content: Text('Gasto eliminado'),
       ),
     );
     _refreshData();
@@ -93,7 +98,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _categoriaController.text = existingData['categoria'];
       _descripcionController.text = existingData['descripcion'];
       _montoController.text = existingData['monto'].toString();
-      // _dateController.text = existingData['fecha'];
+      _dateController.text = existingData['fecha'];
     }
 
     showModalBottomSheet(
@@ -118,26 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     hintText: "Categoría",
                   ),
                 ),
-                // SizedBox(height: 10),
-                // TextField(
-                //   controller: _dateController,
-                //   decoration: InputDecoration(
-                //     labelText: 'DATE',
-                //     filled: true,
-                //     prefixIcon: Icon(Icons.calendar_today),
-                //     enabledBorder: OutlineInputBorder(
-                //       borderSide: BorderSide.none,
-                //     ),
-                //     focusedBorder: OutlineInputBorder(
-                //       borderSide: BorderSide(color: Colors.blue),
-                //     ),
-                //     border: OutlineInputBorder(),
-                //   ),
-                //   readOnly: true,
-                //   onTap: () {
-                //     _selectDate();
-                //   },
-                // ),
+
                 SizedBox(height: 10),
 
                 TextField(
@@ -147,6 +133,26 @@ class _HomeScreenState extends State<HomeScreen> {
                     hintText: "Monto",
                   ),
                   keyboardType: TextInputType.number,
+                ),
+                SizedBox(height: 10),
+
+                TextField(
+                  controller: _dateController,
+                  decoration: InputDecoration(
+                    labelText: 'DATE',
+                    filled: true,
+                    prefixIcon: Icon(Icons.calendar_today),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.blue),
+                    ),
+                  ),
+                  readOnly: true,
+                  onTap: () {
+                    _selectDate();
+                  },
                 ),
                 SizedBox(height: 10),
                 TextField(
@@ -171,10 +177,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       _categoriaController.text = "";
                       _descripcionController.text = "";
                       _montoController.text = "";
+                      _dateController.text = "";
 
                       // Hide Bottom Sheet
                       Navigator.of(context).pop();
-                      print('Data Added');
                     },
                     child: Padding(
                       padding: EdgeInsets.all(18),
@@ -198,59 +204,84 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFFECEAF4),
-      appBar: AppBar(title: Text('CRUD Operations')),
+      appBar: AppBar(title: Text('Gestor gastos personales')),
       body:
           _isLoading
               ? Center(child: CircularProgressIndicator())
-              : ListView.builder(
-                itemCount: _allData.length,
-                itemBuilder:
-                    (context, index) => Card(
-                      margin: EdgeInsets.all(15),
-                      child: ListTile(
-                        title: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 5),
-                          child: Text(
-                            _allData[index]['categoria'],
-                            style: TextStyle(fontSize: 20),
-                          ),
-                        ),
-                        // subtitle: Text(_allData[index]['descripcion']),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(_allData[index]['descripcion'] ?? ''),
-                            SizedBox(height: 4),
-                            Text(
-                              'Monto: \$${_allData[index]['monto'].toString()}',
-                            ),
-                            SizedBox(height: 2),
-                            // Text('Fecha: ${_allData[index]['createdAt']}'),
-                            Text(
-                              'Fecha: ${DateTime.parse(_allData[index]['createdAt']).toLocal().toString().split(' ')[0]}',
-                            ),
-                          ],
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              onPressed: () {
-                                showBottomSheet(_allData[index]['id']);
-                              },
-                              icon: Icon(Icons.edit, color: Colors.indigo),
-                            ),
-                            IconButton(
-                              onPressed: () {
-                                _deleteData(_allData[index]['id']);
-                              },
-                              icon: Icon(Icons.delete, color: Colors.red),
-                            ),
-                          ],
+              : Column(
+                children: [
+                  // Card del total gastado
+                  Card(
+                    elevation: 4,
+                    margin: EdgeInsets.all(15),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text(
+                        "Total Gastado: \$${calcularTotal().toStringAsFixed(2)}",
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
+                  ),
+                  // Lista de datos
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: _allData.length,
+                      itemBuilder:
+                          (context, index) => Card(
+                            margin: EdgeInsets.all(15),
+                            child: ListTile(
+                              title: Padding(
+                                padding: EdgeInsets.symmetric(vertical: 5),
+                                child: Text(
+                                  _allData[index]['categoria'],
+                                  style: TextStyle(fontSize: 20),
+                                ),
+                              ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(_allData[index]['descripcion'] ?? ''),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    'Monto: \$${_allData[index]['monto'].toString()}',
+                                  ),
+                                  SizedBox(height: 2),
+                                  Text(
+                                    // 'Fecha: ${DateTime.parse(_allData[index]['createdAt']).toLocal().toString().split(' ')[0]}',
+                                    'Fecha: \$${_allData[index]['fecha'].toString()}',
+                                  ),
+                                ],
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    onPressed: () {
+                                      showBottomSheet(_allData[index]['id']);
+                                    },
+                                    icon: Icon(
+                                      Icons.edit,
+                                      color: Colors.indigo,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    onPressed: () {
+                                      _deleteData(_allData[index]['id']);
+                                    },
+                                    icon: Icon(Icons.delete, color: Colors.red),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                    ),
+                  ),
+                ],
               ),
+
       floatingActionButton: FloatingActionButton(
         onPressed: () => showBottomSheet(null),
         child: Icon(Icons.add),
