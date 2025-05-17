@@ -219,7 +219,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Padding(
                         padding: EdgeInsets.all(18),
                         child: Text(
-                          id == null ? "Agregar gasto" : "Actualizar",
+                          id == null ? "Agregar" : "Actualizar",
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w500,
@@ -238,8 +238,14 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFECEAF4),
-      appBar: AppBar(title: Text('Gestor gastos personales')),
+      backgroundColor: const Color(0xFFF8F8F8),
+      appBar: AppBar(
+        title: Text(
+          'Gestor gastos personales',
+          style: TextStyle(color: Colors.black),
+        ),
+        centerTitle: true,
+      ),
       body:
           _isLoading
               ? Center(child: CircularProgressIndicator())
@@ -353,9 +359,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
 
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () => showBottomSheet(null),
-        child: Icon(Icons.add),
+        label: const Text('Agregar gasto'),
+        icon: const Icon(Icons.add),
+        backgroundColor: const Color.fromARGB(255, 108, 162, 255),
       ),
     );
   }
