@@ -13,6 +13,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   bool _isLoading = true;
 
+  final _formKey = GlobalKey<FormState>();
+
   double calcularTotal() {
     return _allData.fold(0.0, (sum, item) => sum + (item['monto'] as double));
   }
@@ -106,95 +108,128 @@ class _HomeScreenState extends State<HomeScreen> {
       isScrollControlled: true,
       context: context,
       builder:
-          (_) => Container(
+          (_) => SingleChildScrollView(
             padding: EdgeInsets.only(
               top: 30,
               left: 15,
               right: 15,
               bottom: MediaQuery.of(context).viewInsets.bottom + 50,
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: _categoriaController,
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(),
-                    hintText: "Categoría",
-                  ),
-                ),
-
-                SizedBox(height: 10),
-
-                TextField(
-                  controller: _montoController,
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(),
-                    hintText: "Monto",
-                  ),
-                  keyboardType: TextInputType.number,
-                ),
-                SizedBox(height: 10),
-
-                TextField(
-                  controller: _dateController,
-                  decoration: InputDecoration(
-                    labelText: 'DATE',
-                    filled: true,
-                    prefixIcon: Icon(Icons.calendar_today),
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide.none,
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: _categoriaController,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(),
+                      hintText: "Categoría",
                     ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.blue),
-                    ),
-                  ),
-                  readOnly: true,
-                  onTap: () {
-                    _selectDate();
-                  },
-                ),
-                SizedBox(height: 10),
-                TextField(
-                  controller: _descripcionController,
-                  maxLines: 4,
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(),
-                    hintText: "Description",
-                  ),
-                ),
-                SizedBox(height: 20),
-                Center(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      if (id == null) {
-                        await _addData();
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'La categoría es obligatoria';
+                      } else {
+                        return null;
                       }
-                      if (id != null) {
-                        await _updateData(id);
-                      }
-
-                      _categoriaController.text = "";
-                      _descripcionController.text = "";
-                      _montoController.text = "";
-                      _dateController.text = "";
-
-                      // Hide Bottom Sheet
-                      Navigator.of(context).pop();
                     },
-                    child: Padding(
-                      padding: EdgeInsets.all(18),
-                      child: Text(
-                        id == null ? "Add Data" : "Update",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
+                  ),
+
+                  SizedBox(height: 10),
+
+                  TextFormField(
+                    controller: _montoController,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(),
+                      hintText: "Monto",
+                    ),
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'El monto es obligatorio';
+                      }
+                      if (double.tryParse(value) == null) {
+                        return 'Monto inválido';
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: 10),
+
+                  TextFormField(
+                    controller: _dateController,
+                    decoration: InputDecoration(
+                      labelText: 'DATE',
+                      filled: true,
+                      prefixIcon: Icon(Icons.calendar_today),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.blue),
+                      ),
+                    ),
+                    readOnly: true,
+                    onTap: () {
+                      _selectDate();
+                    },
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'La fecha es obligatoria';
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: 10),
+                  TextFormField(
+                    controller: _descripcionController,
+                    maxLines: 4,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(),
+                      hintText: "Description",
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'La descripción es obligatoria';
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: 20),
+                  Center(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        if (_formKey.currentState!.validate()) {
+                          if (id == null) {
+                            await _addData();
+                          }
+                          if (id != null) {
+                            await _updateData(id);
+                          }
+
+                          _categoriaController.text = "";
+                          _descripcionController.text = "";
+                          _montoController.text = "";
+                          _dateController.text = "";
+
+                          // Hide Bottom Sheet
+                          Navigator.of(context).pop();
+                        }
+                      },
+                      child: Padding(
+                        padding: EdgeInsets.all(18),
+                        child: Text(
+                          id == null ? "Agregar gasto" : "Actualizar",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
     );
@@ -269,7 +304,43 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                   IconButton(
                                     onPressed: () {
-                                      _deleteData(_allData[index]['id']);
+                                      showDialog(
+                                        context: context,
+                                        builder: (BuildContext context) {
+                                          return AlertDialog(
+                                            title: Text('¿Eliminar gasto?'),
+                                            content: Text(
+                                              '¿Estás seguro de que quieres eliminar este gasto?',
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                child: Text('Cancelar'),
+                                                onPressed: () {
+                                                  Navigator.of(
+                                                    context,
+                                                  ).pop(); // Cierra el diálogo
+                                                },
+                                              ),
+                                              TextButton(
+                                                child: Text(
+                                                  'Eliminar',
+                                                  style: TextStyle(
+                                                    color: Colors.red,
+                                                  ),
+                                                ),
+                                                onPressed: () {
+                                                  Navigator.of(
+                                                    context,
+                                                  ).pop(); // Cierra el diálogo
+                                                  _deleteData(
+                                                    _allData[index]['id'],
+                                                  );
+                                                },
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      );
                                     },
                                     icon: Icon(Icons.delete, color: Colors.red),
                                   ),
