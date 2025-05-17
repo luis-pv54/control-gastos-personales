@@ -1,5 +1,6 @@
-import 'package:control_gastos_personales/db_helper.dart';
 import 'package:flutter/material.dart';
+import 'package:control_gastos_personales/db_helper.dart';
+import 'package:control_gastos_personales/form_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -10,16 +11,14 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   List<Map<String, dynamic>> _allData = [];
-
   bool _isLoading = true;
 
-  final _formKey = GlobalKey<FormState>();
-
-  double calcularTotal() {
-    return _allData.fold(0.0, (sum, item) => sum + (item['monto'] as double));
+  @override
+  void initState() {
+    super.initState();
+    _refreshData();
   }
 
-  // Get All Data From Database
   void _refreshData() async {
     final data = await SQLHelper.getAllData();
     setState(() {
@@ -28,36 +27,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _refreshData();
-  }
-
-  // Add Data
-  Future<void> _addData() async {
-    await SQLHelper.createData(
-      _categoriaController.text,
-      _descripcionController.text,
-      double.parse(_montoController.text),
-      _dateController.text,
-    );
-    _refreshData();
-  }
-
-  // Update Data
-  Future<void> _updateData(int id) async {
-    await SQLHelper.updateData(
-      id,
-      _categoriaController.text,
-      _descripcionController.text,
-      double.parse(_montoController.text),
-      _dateController.text,
-    );
-    _refreshData();
-  }
-
-  // Delete Data
   void _deleteData(int id) async {
     await SQLHelper.deleteData(id);
     ScaffoldMessenger.of(context).showSnackBar(
@@ -69,170 +38,8 @@ class _HomeScreenState extends State<HomeScreen> {
     _refreshData();
   }
 
-  Future<void> _selectDate() async {
-    DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
-
-    if (picked != null) {
-      setState(() {
-        _dateController.text = picked.toString().split(" ")[0];
-      });
-    }
-  }
-
-  final TextEditingController _categoriaController = TextEditingController();
-  final TextEditingController _descripcionController = TextEditingController();
-  final TextEditingController _montoController = TextEditingController();
-  final TextEditingController _dateController = TextEditingController();
-
-  void showBottomSheet(int? id) async {
-    // if ID is not null then it will update other wise it will new data
-    // when edit icon is pressed then id will be given to bottomsheet function and
-    // it will edit
-    if (id != null) {
-      final existingData = _allData.firstWhere(
-        (element) => element['id'] == id,
-      );
-      _categoriaController.text = existingData['categoria'];
-      _descripcionController.text = existingData['descripcion'];
-      _montoController.text = existingData['monto'].toString();
-      _dateController.text = existingData['fecha'];
-    }
-
-    showModalBottomSheet(
-      elevation: 5,
-      isScrollControlled: true,
-      context: context,
-      builder:
-          (_) => SingleChildScrollView(
-            padding: EdgeInsets.only(
-              top: 30,
-              left: 15,
-              right: 15,
-              bottom: MediaQuery.of(context).viewInsets.bottom + 50,
-            ),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: _categoriaController,
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(),
-                      hintText: "Categoría",
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'La categoría es obligatoria';
-                      } else {
-                        return null;
-                      }
-                    },
-                  ),
-
-                  SizedBox(height: 10),
-
-                  TextFormField(
-                    controller: _montoController,
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(),
-                      hintText: "Monto",
-                    ),
-                    keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'El monto es obligatorio';
-                      }
-                      if (double.tryParse(value) == null) {
-                        return 'Monto inválido';
-                      }
-                      return null;
-                    },
-                  ),
-                  SizedBox(height: 10),
-
-                  TextFormField(
-                    controller: _dateController,
-                    decoration: InputDecoration(
-                      labelText: 'DATE',
-                      filled: true,
-                      prefixIcon: Icon(Icons.calendar_today),
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide.none,
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.blue),
-                      ),
-                    ),
-                    readOnly: true,
-                    onTap: () {
-                      _selectDate();
-                    },
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'La fecha es obligatoria';
-                      }
-                      return null;
-                    },
-                  ),
-                  SizedBox(height: 10),
-                  TextFormField(
-                    controller: _descripcionController,
-                    maxLines: 4,
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(),
-                      hintText: "Description",
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'La descripción es obligatoria';
-                      }
-                      return null;
-                    },
-                  ),
-                  SizedBox(height: 20),
-                  Center(
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        if (_formKey.currentState!.validate()) {
-                          if (id == null) {
-                            await _addData();
-                          }
-                          if (id != null) {
-                            await _updateData(id);
-                          }
-
-                          _categoriaController.text = "";
-                          _descripcionController.text = "";
-                          _montoController.text = "";
-                          _dateController.text = "";
-
-                          // Hide Bottom Sheet
-                          Navigator.of(context).pop();
-                        }
-                      },
-                      child: Padding(
-                        padding: EdgeInsets.all(18),
-                        child: Text(
-                          id == null ? "Agregar" : "Actualizar",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-    );
+  double calcularTotal() {
+    return _allData.fold(0.0, (sum, item) => sum + (item['monto'] as double));
   }
 
   @override
@@ -240,21 +47,20 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F8F8),
       appBar: AppBar(
-        title: Text(
-          'Gestor gastos personales',
-          style: TextStyle(color: Colors.black),
-        ),
+        title: const Text('Gastos', style: TextStyle(color: Colors.black)),
         centerTitle: true,
+        backgroundColor: Colors.white,
+        elevation: 1,
       ),
       body:
           _isLoading
-              ? Center(child: CircularProgressIndicator())
+              ? const Center(child: CircularProgressIndicator())
               : Column(
                 children: [
                   // Card del total gastado
                   Card(
                     elevation: 4,
-                    margin: EdgeInsets.all(15),
+                    margin: const EdgeInsets.all(15),
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: Text(
@@ -266,105 +72,108 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                   ),
-                  // Lista de datos
+                  // Lista de gastos
                   Expanded(
                     child: ListView.builder(
                       itemCount: _allData.length,
-                      itemBuilder:
-                          (context, index) => Card(
-                            margin: EdgeInsets.all(15),
-                            child: ListTile(
-                              title: Padding(
-                                padding: EdgeInsets.symmetric(vertical: 5),
-                                child: Text(
-                                  _allData[index]['categoria'],
-                                  style: TextStyle(fontSize: 20),
-                                ),
+                      itemBuilder: (context, index) {
+                        final gasto = _allData[index];
+                        return Card(
+                          margin: const EdgeInsets.all(12),
+                          child: ListTile(
+                            title: Container(
+                              padding: const EdgeInsets.all(8),
+                              color: Colors.black87,
+                              child: Text(
+                                gasto['categoria'],
+                                style: const TextStyle(color: Colors.white),
                               ),
-                              subtitle: Column(
+                            ),
+                            subtitle: Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(_allData[index]['descripcion'] ?? ''),
-                                  SizedBox(height: 4),
-                                  Text(
-                                    'Monto: \$${_allData[index]['monto'].toString()}',
-                                  ),
-                                  SizedBox(height: 2),
-                                  Text(
-                                    // 'Fecha: ${DateTime.parse(_allData[index]['createdAt']).toLocal().toString().split(' ')[0]}',
-                                    'Fecha: \$${_allData[index]['fecha'].toString()}',
-                                  ),
-                                ],
-                              ),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    onPressed: () {
-                                      showBottomSheet(_allData[index]['id']);
-                                    },
-                                    icon: Icon(
-                                      Icons.edit,
-                                      color: Colors.indigo,
-                                    ),
-                                  ),
-                                  IconButton(
-                                    onPressed: () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (BuildContext context) {
-                                          return AlertDialog(
-                                            title: Text('¿Eliminar gasto?'),
-                                            content: Text(
-                                              '¿Estás seguro de que quieres eliminar este gasto?',
-                                            ),
-                                            actions: [
-                                              TextButton(
-                                                child: Text('Cancelar'),
-                                                onPressed: () {
-                                                  Navigator.of(
-                                                    context,
-                                                  ).pop(); // Cierra el diálogo
-                                                },
-                                              ),
-                                              TextButton(
-                                                child: Text(
-                                                  'Eliminar',
-                                                  style: TextStyle(
-                                                    color: Colors.red,
-                                                  ),
-                                                ),
-                                                onPressed: () {
-                                                  Navigator.of(
-                                                    context,
-                                                  ).pop(); // Cierra el diálogo
-                                                  _deleteData(
-                                                    _allData[index]['id'],
-                                                  );
-                                                },
-                                              ),
-                                            ],
-                                          );
-                                        },
-                                      );
-                                    },
-                                    icon: Icon(Icons.delete, color: Colors.red),
-                                  ),
+                                  Text(gasto['descripcion'] ?? ''),
+                                  const SizedBox(height: 4),
+                                  Text("Monto: \$${gasto['monto'].toString()}"),
+                                  const SizedBox(height: 2),
+                                  Text("Fecha: ${gasto['fecha'].toString()}"),
                                 ],
                               ),
                             ),
+                            trailing: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.black,
+                              ),
+                              child: const Text(
+                                'Editar',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder:
+                                        (_) => FormScreen(
+                                          id: gasto['id'],
+                                          existingData: gasto,
+                                          onSubmit: (updatedData) async {
+                                            await SQLHelper.updateData(
+                                              updatedData['id'],
+                                              updatedData['categoria'],
+                                              updatedData['descripcion'],
+                                              updatedData['monto'],
+                                              updatedData['fecha'],
+                                            );
+                                            _refreshData();
+                                          },
+                                        ),
+                                  ),
+                                );
+                              },
+                            ),
+                            leading: IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder:
+                                      (ctx) => AlertDialog(
+                                        title: const Text('¿Eliminar gasto?'),
+                                        content: const Text(
+                                          '¿Estás seguro de que quieres eliminar este gasto?',
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed:
+                                                () => Navigator.of(ctx).pop(),
+                                            child: const Text('Cancelar'),
+                                          ),
+                                          TextButton(
+                                            onPressed: () {
+                                              Navigator.of(ctx).pop();
+                                              _deleteData(gasto['id']);
+                                            },
+                                            child: const Text(
+                                              'Eliminar',
+                                              style: TextStyle(
+                                                color: Colors.red,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                );
+                              },
+                            ),
                           ),
+                        );
+                      },
                     ),
                   ),
                 ],
               ),
-
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => showBottomSheet(null),
-        label: const Text('Agregar gasto'),
-        icon: const Icon(Icons.add),
-        backgroundColor: const Color.fromARGB(255, 108, 162, 255),
-      ),
+      // 🔴 Botón flotante eliminado completamente
     );
   }
 }
